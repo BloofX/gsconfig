@@ -431,7 +431,7 @@ class Catalog(object):
         }
 
         cs_url = url(self.service_url,
-            ["workspaces", workspace, "coveragestores", name, "external." + extension], 
+            ["workspaces", workspace.name, "coveragestores", name, "external." + extension], 
             { "configure" : "first", "coverageName" : name})
         
         headers, response = self.http.request(cs_url, "PUT", url_filepath, headers)
