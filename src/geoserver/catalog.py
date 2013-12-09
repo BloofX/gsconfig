@@ -406,6 +406,12 @@ class Catalog(object):
                 unlink(archive)
 
     def create_coveragestore_external_geotiff(self, name, url_filepath, workspace=None, overwrite=False):
+        self._create_coveragestore_external(name, url_filepath, workspace, overwrite, extension="geotiff")
+        
+    def create_coveragestore_external_mosaic(self, name, url_filepath, workspace=None, overwrite=False):
+        self._create_coveragestore_external(name, url_filepath, workspace, overwrite, extension="imagemosaic")
+
+    def _create_coveragestore_external(self, name, url_filepath, workspace=None, overwrite=False, extension="geotiff"):
         if not overwrite:
             try:
                 self.get_store(name, workspace)
@@ -424,10 +430,8 @@ class Catalog(object):
             "Accept": "application/xml"
         }
 
-        ext = "geotiff"
-
         cs_url = url(self.service_url,
-            ["workspaces", workspace, "coveragestores", name, "external." + ext], 
+            ["workspaces", workspace, "coveragestores", name, "external." + extension], 
             { "configure" : "first", "coverageName" : name})
         
         headers, response = self.http.request(cs_url, "PUT", url_filepath, headers)
