@@ -405,7 +405,7 @@ class Catalog(object):
             if archive is not None:
                 unlink(archive)
 
-    def create_coveragestore3(self, name, data, workspace=None, overwrite=False):
+    def create_coveragestore_external_geotiff(self, name, url_filepath, workspace=None, overwrite=False):
         if not overwrite:
             try:
                 self.get_store(name, workspace)
@@ -430,7 +430,7 @@ class Catalog(object):
             ["workspaces", workspace, "coveragestores", name, "external." + ext], 
             { "configure" : "first", "coverageName" : name})
         
-        headers, response = self.http.request(cs_url, "PUT", data, headers)
+        headers, response = self.http.request(cs_url, "PUT", url_filepath, headers)
         self._cache.clear()
         if headers.status != 201:
             raise UploadError(response)
