@@ -96,7 +96,8 @@ class CoverageStore(ResourceInfo):
     writers = dict(enabled = write_bool("enabled"),
                    name = write_string("name"),
                    url = write_string("url"),
-                   type = write_string("type"))
+                   type = write_string("type"),
+                   workspace = write_string("workspace"))
 
 
     def get_resources(self, name=None):
@@ -122,9 +123,9 @@ class UnsavedCoverageStore(CoverageStore):
     def __init__(self, catalog, name, workspace):
         super(UnsavedCoverageStore, self).__init__(catalog, workspace, name)
         self.dirty.update(name=name, enabled = True, type="GeoTIFF",
-                url = "file:data/")
+                url = "file:data/", workspace = workspace.name)
 
     @property
     def href(self):
         return url(self.catalog.service_url,
-            ["workspaces", self.workspace.name, "coveragestores"], dict(name=self.name))
+            ["workspaces", self.workspace.name, "coveragestores"])
