@@ -310,13 +310,15 @@ class Catalog(object):
         headers = { 'Content-Type': 'application/zip', 'Accept': 'application/xml' }
         upload_url = url(self.service_url, 
             ["workspaces", workspace, "datastores", store, "file.shp"], params) 
-
-        with open(bundle, "rb") as f:
-            data = f.read()
-            headers, response = self.http.request(upload_url, "PUT", data, headers)
-            self._cache.clear()
-            if headers.status != 201:
-                raise UploadError(response)
+        
+        try:
+            with open(bundle, "rb") as f:
+                headers, response = self.http.request(upload_url, "PUT", f, headers)
+                self._cache.clear()
+                if headers.status != 201:
+                    raise UploadError(response)
+        finally:
+            unlink(bundle)
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
         if not overwrite:
@@ -383,12 +385,10 @@ class Catalog(object):
 
         if isinstance(data, dict):
             archive = prepare_upload_bundle(name, data)
-            message = open(archive)
+            message = archive
             if "tfw" in data:
                 headers['Content-type'] = 'application/archive'
                 ext = "worldimage"
-        elif isinstance(data, basestring):
-            message = open(data)
         else:
             message = data
 
@@ -396,13 +396,44 @@ class Catalog(object):
             ["workspaces", workspace.name, "coveragestores", name, "file." + ext])
 
         try:
-            headers, response = self.http.request(cs_url, "PUT", message, headers)
-            self._cache.clear()
-            if headers.status != 201:
-                raise UploadError(response)
+            with open(message, "rb") as f:
+                headers, response = self.http.request(cs_url, "PUT", f, headers)
+                self._cache.clear()
+                if headers.status != 201:
+                    raise UploadError(response)
         finally:
             if archive is not None:
                 unlink(archive)
+
+    def create_coveragestore3(self, name, data, workspace=None, overwrite=False):
+        if not overwrite:
+            try:
+                self.get_store(name, workspace)
+                msg = "There is already a store named " + name
+                if workspace:
+                    msg += " in " + str(workspace)
+                raise ConflictingDataError(msg)
+            except FailedRequestError:
+                # we don't really expect that every layer name will be taken
+                pass
+
+        if workspace is None:
+            workspace = self.get_default_workspace()
+        headers = {
+            "Content-type": "text/plain",
+            "Accept": "application/xml"
+        }
+
+        ext = "geotiff"
+
+        cs_url = url(self.service_url,
+            ["workspaces", workspace, "coveragestores", name, "external." + ext], 
+            { "configure" : "first", "coverageName" : name})
+        
+        headers, response = self.http.request(cs_url, "PUT", data, headers)
+        self._cache.clear()
+        if headers.status != 201:
+            raise UploadError(response)
 
     def get_resource(self, name, store=None, workspace=None):
         if store is not None and workspace is not None:
