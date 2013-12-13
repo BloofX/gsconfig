@@ -385,10 +385,12 @@ class Catalog(object):
 
         if isinstance(data, dict):
             archive = prepare_upload_bundle(name, data)
-            message = archive
+            message = open(archive)
             if "tfw" in data:
                 headers['Content-type'] = 'application/archive'
                 ext = "worldimage"
+        elif isinstance(data, basestring):
+            message = open(data)
         else:
             message = data
 
@@ -396,11 +398,10 @@ class Catalog(object):
             ["workspaces", workspace.name, "coveragestores", name, "file." + ext])
 
         try:
-            with open(message, "rb") as f:
-                headers, response = self.http.request(cs_url, "PUT", f, headers)
-                self._cache.clear()
-                if headers.status != 201:
-                    raise UploadError(response)
+            headers, response = self.http.request(cs_url, "PUT", message, headers)
+            self._cache.clear()
+            if headers.status != 201:
+                raise UploadError(response)
         finally:
             if archive is not None:
                 unlink(archive)
